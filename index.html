@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Log Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .control-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #495057;
+            font-size: 14px;
+        }
+        input[type="number"], input[type="file"] {
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        button {
+            flex: 1;
+            min-width: 120px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .visualization {
+            padding: 20px;
+        }
+        .canvas-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            display: block;
+            background: white;
+            width: 100%;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .info {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Robot Log Analyzer</h1>
+            <p>Analyze robot swarm homing behavior and nematic order</p>
+        </div>
+        
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label for="csvFile">Upload CSV Log File:</label>
+                    <input type="file" id="csvFile" accept=".csv">
+                </div>
+                <div class="control-group">
+                    <label for="homeTolerance">Home Tolerance:</label>
+                    <input type="number" id="homeTolerance" value="5.0" step="0.1" min="0">
+                </div>
+                <div class="control-group">
+                    <label for="minRobotsAtHome">Min Robots at Home:</label>
+                    <input type="number" id="minRobotsAtHome" value="13" min="1" max="20">
+                </div>
+                <div class="control-group">
+                    <label for="trailPoints">Trail Points per Robot:</label>
+                    <input type="number" id="trailPoints" value="200" min="10" max="1000">
+                </div>
+                <div class="control-group">
+                    <label for="vectorScale">Velocity Vector Scale:</label>
+                    <input type="number" id="vectorScale" value="2" step="0.5" min="0" max="20">
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="btn-primary" id="analyzeBtn" onclick="analyzeData()" disabled>Analyze Data</button>
+                <button class="btn-success" id="playBtn" onclick="togglePlay()" disabled>▶ Play</button>
+                <button class="btn-danger" onclick="resetAnimation()">Reset</button>
+            </div>
+            
+            <div class="info">
+                <strong>Instructions:</strong> Upload a CSV file with columns: timestamp, tag_id, x, y, vx, vy. The analyzer will compute home times, nematic order, and animate the swarm behavior.
+            </div>
+            
+            <div class="log" id="logOutput"></div>
+        </div>
+        
+        <div class="visualization">
+            <div class="canvas-row">
+                <canvas id="trajCanvas" width="800" height="800"></canvas>
+                <canvas id="orderCanvas" width="400" height="800"></canvas>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Time</div>
+                    <div class="stat-value" id="timeValue">0.0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Robots at Home</div>
+                    <div class="stat-value" id="robotsHomeValue">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Nematic Order S</div>
+                    <div class="stat-value" id="nematicValue">0.00</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Global Home Time</div>
+                    <div class="stat-value" id="homeTimeValue">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script>
+        const CENTER = [334.0, 322.0];
+        const dl = 270 / 4;
+        
+        const offsetTable = {
+            7: [-1, 1, 1], 4: [-1, 1, 2], 14: [1, 1, 1], 8: [1, 1, 2],
+            11: [-1, -1, 1], 12: [-1, -1, 2], 6: [1, -1, 1], 5: [1, -1, 2],
+            2: [0, -1, 1], 1: [0, -1, 2], 9: [0, 1, 1], 15: [0, 1, 2],
+            13: [-1, 0, 2], 10: [1, 0, 2], 3: [-1, 0, 1], 16: [1, 0, 1]
+        };
+
+        let data = null;
+        let times = [];
+        let nematicOrder = [];
+        let globalHomeTime = null;
+        let homeTimePerTag = {};
+        let currentFrame = 0;
+        let isPlaying = false;
+        let animationId = null;
+
+        const trajCanvas = document.getElementById('trajCanvas');
+        const trajCtx = trajCanvas.getContext('2d');
+        const orderCanvas = document.getElementById('orderCanvas');
+        const orderCtx = orderCanvas.getContext('2d');
+
+        function log(message) {
+            const logDiv = document.getElementById('logOutput');
+            logDiv.innerHTML += message + '<br>';
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function getHomePosition(tagId) {
+            const offset = offsetTable[tagId] || [0, 0, 0];
+            return {
+                x: CENTER[0] + offset[0] * offset[2] * dl,
+                y: CENTER[1] + offset[1] * offset[2] * dl
+            };
+        }
+
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        log('CSV loaded: ' + results.data.length + ' rows');
+                        processData(results.data);
+                        document.getElementById('analyzeBtn').disabled = false;
+                    },
+                    error: function(err) {
+                        log('Error parsing CSV: ' + err.message);
+                    }
+                });
+            }
+        });
+
+        function processData(rawData) {
+            data = rawData.filter(row => 
+                row.timestamp != null && row.tag_id != null && 
+                row.x != null && row.y != null &&
+                row.vx != null && row.vy != null
+            );
+
+            data.forEach(row => {
+                const home = getHomePosition(row.tag_id);
+                row.home_x = home.x;
+                row.home_y = home.y;
+                row.dist_home = Math.sqrt(
+                    Math.pow(row.x - row.home_x, 2) + 
+                    Math.pow(row.y - row.home_y, 2)
+                );
+                row.theta = Math.atan2(row.vy, row.vx);
+            });
+
+            data.sort((a, b) => a.timestamp - b.timestamp || a.tag_id - b.tag_id);
+            log('Data processed: ' + data.length + ' valid rows');
+        }
+
+        function analyzeData() {
+            if (!data) return;
+
+            const homeTolerance = parseFloat(document.getElementById('homeTolerance').value);
+            const minRobotsAtHome = parseInt(document.getElementById('minRobotsAtHome').value);
+
+            log('Computing home times...');
+            computeHomeTimes(homeTolerance, minRobotsAtHome);
+
+            log('Computing nematic order...');
+            computeNematicOrder();
+
+            log('Analysis complete!');
+            log(`Global home time: ${globalHomeTime ? globalHomeTime.toFixed(2) : 'N/A'}`);
+            
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('homeTimeValue').textContent = 
+                globalHomeTime ? globalHomeTime.toFixed(1) : '--';
+
+            drawOrderPlot();
+            drawFrame(0);
+        }
+
+        function computeHomeTimes(homeTolerance, minRobotsAtHome) {
+            const tags = [...new Set(data.map(r => r.tag_id))];
+            homeTimePerTag = {};
+
+            tags.forEach(tag => {
+                const tagData = data.filter(r => r.tag_id === tag);
+                const homeRow = tagData.find(r => r.dist_home <= homeTolerance);
+                if (homeRow) {
+                    homeTimePerTag[tag] = homeRow.timestamp;
+                }
+            });
+
+            const validTimes = Object.values(homeTimePerTag).sort((a, b) => a - b);
+            
+            for (let t of validTimes) {
+                const count = validTimes.filter(ht => ht <= t).length;
+                if (count >= minRobotsAtHome) {
+                    globalHomeTime = t;
+                    break;
+                }
+            }
+
+            log(`Robots that reached home: ${Object.keys(homeTimePerTag).length} / ${tags.length}`);
+        }
+
+        function computeNematicOrder() {
+            times = [...new Set(data.map(r => r.timestamp))].sort((a, b) => a - b);
+            nematicOrder = [];
+
+            times.forEach(t => {
+                const rows = data.filter(r => r.timestamp === t);
+                if (rows.length < 2) {
+                    nematicOrder.push(NaN);
+                    return;
+                }
+
+                const thetas = rows.map(r => r.theta);
+                const C2 = thetas.reduce((sum, th) => sum + Math.cos(2 * th), 0) / thetas.length;
+                const S2 = thetas.reduce((sum, th) => sum + Math.sin(2 * th), 0) / thetas.length;
+                
+                let S_rob;
+                if (thetas.length < 3) {
+                    S_rob = Math.sqrt(C2 * C2 + S2 * S2);
+                } else {
+                    const phi_mean = 0.5 * Math.atan2(S2, C2);
+                    const deviations = thetas.map(th => {
+                        const angle = 2 * (th - phi_mean);
+                        return Math.atan2(Math.sin(angle), Math.cos(angle));
+                    });
+                    
+                    const worstIdx = deviations.reduce((maxIdx, dev, idx, arr) => 
+                        Math.abs(dev) > Math.abs(arr[maxIdx]) ? idx : maxIdx, 0);
+                    
+                    const thetas2 = thetas.filter((_, idx) => idx !== worstIdx);
+                    const C2r = thetas2.reduce((sum, th) => sum + Math.cos(2 * th), 0) / thetas2.length;
+                    const S2r = thetas2.reduce((sum, th) => sum + Math.sin(2 * th), 0) / thetas2.length;
+                    S_rob = Math.sqrt(C2r * C2r + S2r * S2r);
+                }
+                
+                nematicOrder.push(S_rob);
+            });
+        }
+
+        function drawOrderPlot() {
+            const w = orderCanvas.width;
+            const h = orderCanvas.height;
+            orderCtx.fillStyle = 'white';
+            orderCtx.fillRect(0, 0, w, h);
+
+            const margin = 40;
+            const plotW = w - 2 * margin;
+            const plotH = h - 2 * margin;
+
+            const tMin = Math.min(...times);
+            const tMax = Math.max(...times);
+            const tRange = tMax - tMin;
+
+            orderCtx.strokeStyle = '#ddd';
+            orderCtx.lineWidth = 1;
+            for (let i = 0; i <= 5; i++) {
+                const y = margin + (plotH / 5) * i;
+                orderCtx.beginPath();
+                orderCtx.moveTo(margin, y);
+                orderCtx.lineTo(w - margin, y);
+                orderCtx.stroke();
+            }
+
+            orderCtx.strokeStyle = '#667eea';
+            orderCtx.lineWidth = 2;
+            orderCtx.beginPath();
+            let started = false;
+            times.forEach((t, i) => {
+                if (isNaN(nematicOrder[i])) return;
+                const x = margin + ((t - tMin) / tRange) * plotW;
+                const y = h - margin - nematicOrder[i] * plotH;
+                if (!started) {
+                    orderCtx.moveTo(x, y);
+                    started = true;
+                } else {
+                    orderCtx.lineTo(x, y);
+                }
+            });
+            orderCtx.stroke();
+
+            if (globalHomeTime) {
+                const x = margin + ((globalHomeTime - tMin) / tRange) * plotW;
+                orderCtx.strokeStyle = '#ff0000';
+                orderCtx.lineWidth = 2;
+                orderCtx.setLineDash([5, 5]);
+                orderCtx.beginPath();
+                orderCtx.moveTo(x, margin);
+                orderCtx.lineTo(x, h - margin);
+                orderCtx.stroke();
+                orderCtx.setLineDash([]);
+            }
+
+            orderCtx.fillStyle = 'black';
+            orderCtx.font = '12px Arial';
+            orderCtx.textAlign = 'center';
+            orderCtx.fillText('Time', w / 2, h - 10);
+            orderCtx.save();
+            orderCtx.translate(15, h / 2);
+            orderCtx.rotate(-Math.PI / 2);
+            orderCtx.fillText('Nematic Order S', 0, 0);
+            orderCtx.restore();
+        }
+
+        function drawFrame(frameIdx) {
+            if (frameIdx >= times.length) return;
+
+            const t = times[frameIdx];
+            const currentData = data.filter(r => r.timestamp === t);
+            const homeTolerance = parseFloat(document.getElementById('homeTolerance').value);
+            const trailPoints = parseInt(document.getElementById('trailPoints').value);
+            const vectorScale = parseFloat(document.getElementById('vectorScale').value);
+
+            const w = trajCanvas.width;
+            const h = trajCanvas.height;
+            
+            const allX = data.map(r => r.x);
+            const allY = data.map(r => r.y);
+            const xMin = Math.min(...allX) - 20;
+            const xMax = Math.max(...allX) + 20;
+            const yMin = Math.min(...allY) - 20;
+            const yMax = Math.max(...allY) + 20;
+            const xRange = xMax - xMin;
+            const yRange = yMax - yMin;
+
+            const toCanvasX = x => ((x - xMin) / xRange) * w;
+            const toCanvasY = y => ((y - yMin) / yRange) * h;
+
+            trajCtx.fillStyle = 'white';
+            trajCtx.fillRect(0, 0, w, h);
+
+            const tags = [...new Set(data.map(r => r.tag_id))];
+            const colors = {};
+            tags.forEach((tag, i) => {
+                const hue = (i * 360 / tags.length) % 360;
+                colors[tag] = `hsl(${hue}, 70%, 50%)`;
+            });
+
+            tags.forEach(tag => {
+                const home = getHomePosition(tag);
+                const cx = toCanvasX(home.x);
+                const cy = toCanvasY(home.y);
+                
+                trajCtx.strokeStyle = 'rgba(0,0,0,0.3)';
+                trajCtx.lineWidth = 1;
+                trajCtx.setLineDash([3, 3]);
+                trajCtx.beginPath();
+                const r = (homeTolerance / xRange) * w;
+                trajCtx.arc(cx, cy, r, 0, Math.PI * 2);
+                trajCtx.stroke();
+                trajCtx.setLineDash([]);
+
+                trajCtx.fillStyle = 'black';
+                trajCtx.beginPath();
+                trajCtx.arc(cx, cy, 4, 0, Math.PI * 2);
+                trajCtx.fill();
+            });
+
+            tags.forEach(tag => {
+                const tagHistory = data.filter(r => r.tag_id === tag && r.timestamp <= t);
+                const trail = tagHistory.slice(-trailPoints);
+                
+                if (trail.length > 1) {
+                    trajCtx.strokeStyle = colors[tag] + '40';
+                    trajCtx.lineWidth = 2;
+                    trajCtx.beginPath();
+                    trail.forEach((r, i) => {
+                        const x = toCanvasX(r.x);
+                        const y = toCanvasY(r.y);
+                        if (i === 0) trajCtx.moveTo(x, y);
+                        else trajCtx.lineTo(x, y);
+                    });
+                    trajCtx.stroke();
+                }
+            });
+
+            let robotsAtHome = 0;
+            currentData.forEach(r => {
+                const x = toCanvasX(r.x);
+                const y = toCanvasY(r.y);
+                
+                trajCtx.fillStyle = colors[r.tag_id];
+                trajCtx.beginPath();
+                trajCtx.arc(x, y, 5, 0, Math.PI * 2);
+                trajCtx.fill();
+
+                const vScale = vectorScale;
+                trajCtx.strokeStyle = colors[r.tag_id];
+                trajCtx.lineWidth = 2;
+                trajCtx.beginPath();
+                trajCtx.moveTo(x, y);
+                trajCtx.lineTo(x + r.vx * vScale, y + r.vy * vScale);
+                trajCtx.stroke();
+
+                if (r.dist_home <= homeTolerance) robotsAtHome++;
+            });
+
+            if (frameIdx < nematicOrder.length) {
+                const w2 = orderCanvas.width;
+                const h2 = orderCanvas.height;
+                const margin = 40;
+                const plotW = w2 - 2 * margin;
+                const plotH = h2 - 2 * margin;
+                const tMin = Math.min(...times);
+                const tMax = Math.max(...times);
+                const tRange = tMax - tMin;
+                
+                const x = margin + ((t - tMin) / tRange) * plotW;
+                const y = h2 - margin - (nematicOrder[frameIdx] || 0) * plotH;
+                
+                orderCtx.fillStyle = 'red';
+                orderCtx.beginPath();
+                orderCtx.arc(x, y, 5, 0, Math.PI * 2);
+                orderCtx.fill();
+            }
+
+            document.getElementById('timeValue').textContent = t.toFixed(1);
+            document.getElementById('robotsHomeValue').textContent = robotsAtHome;
+            document.getElementById('nematicValue').textContent = 
+                (nematicOrder[frameIdx] || 0).toFixed(3);
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('playBtn');
+            btn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+            
+            if (isPlaying) {
+                animate();
+            } else {
+                if (animationId) cancelAnimationFrame(animationId);
+            }
+        }
+
+        function animate() {
+            if (!isPlaying) return;
+            
+            if (currentFrame < times.length - 1) {
+                currentFrame++;
+                drawFrame(currentFrame);
+                animationId = requestAnimationFrame(() => setTimeout(animate, 50));
+            } else {
+                isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶ Play';
+            }
+        }
+
+        function resetAnimation() {
+            isPlaying = false;
+            if (animationId) cancelAnimationFrame(animationId);
+            currentFrame = 0;
+            document.getElementById('playBtn').textContent = '▶ Play';
+            if (times.length > 0) {
+                drawOrderPlot();
+                drawFrame(0);
+            }
+        }
+    </script>
+</body>
+</html>
