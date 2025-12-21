@@ -3,69 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Swarm Dynamics - Precision Vector Analyzer</title>
+    <title>Swarm Dynamics - Playback Controller</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono&display=swap');
-        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; color: #1e293b; }
-        canvas { border-radius: 12px; border: 1px solid #e2e8f0; cursor: crosshair; }
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; color: #1e293b; }
+        canvas { border-radius: 12px; border: 1px solid #cbd5e1; background-color: #ffffff; }
         .stat-card { background: #ffffff; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        input[type="range"] { accent-color: #2563eb; height: 6px; }
+        input[type="range"] { accent-color: #2563eb; height: 6px; cursor: pointer; }
     </style>
 </head>
 <body class="p-4 md:p-6">
     <div class="max-w-[1600px] mx-auto">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-            <div class="stat-card p-5 rounded-2xl col-span-1 lg:col-span-3">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+            <div class="stat-card p-5 rounded-2xl col-span-1 lg:col-span-4">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="w-3 h-3 rounded-full bg-blue-600 shadow-sm"></div>
-                    <h1 class="text-lg font-bold text-slate-900 tracking-tight">Swarm Vector Console</h1>
+                    <div class="w-3 h-3 rounded-full bg-blue-600"></div>
+                    <h1 class="text-lg font-bold text-slate-900 tracking-tight">Swarm Control Center</h1>
                 </div>
                 
-                <div class="flex flex-wrap gap-8 items-end">
+                <div class="flex flex-wrap gap-10 items-end">
                     <div class="flex flex-col">
-                        <label class="text-[10px] font-bold text-slate-400 uppercase mb-2">Upload Data</label>
-                        <input type="file" id="csvFile" accept=".csv" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-all cursor-pointer"/>
+                        <label class="text-[10px] font-bold text-slate-400 uppercase mb-2">Dataset (.csv)</label>
+                        <input type="file" id="csvFile" accept=".csv" class="text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white"/>
                     </div>
                     
-                    <div class="flex flex-col min-w-[200px]">
+                    <div class="flex flex-col min-w-[150px]">
                         <div class="flex justify-between mb-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase">Vector Length (Quiver)</label>
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Vector Scale</label>
                             <span id="scaleVal" class="text-[10px] font-mono font-bold text-blue-600">1.00x</span>
                         </div>
-                        <input type="range" id="quiverScale" min="0.1" max="2.0" step="0.05" value="1.0" class="w-full bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                        <input type="range" id="quiverScale" min="0.1" max="2.0" step="0.05" value="1.0" class="w-full bg-slate-200 rounded-lg appearance-none">
                     </div>
 
-                    <div class="flex items-center gap-4 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200">
+                    <div class="flex flex-col min-w-[150px]">
+                        <div class="flex justify-between mb-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase">Playback Speed</label>
+                            <span id="speedVal" class="text-[10px] font-mono font-bold text-blue-600">1.0x</span>
+                        </div>
+                        <input type="range" id="playbackSpeed" min="0.1" max="5.0" step="0.1" value="1.0" class="w-full bg-slate-200 rounded-lg appearance-none">
+                    </div>
+
+                    <div class="flex items-center gap-4 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200 h-[42px]">
                         <input type="checkbox" id="traceMode" checked class="w-4 h-4 rounded border-slate-300 text-blue-600">
-                        <label for="traceMode" class="text-[10px] font-bold text-slate-500 uppercase">Show Trails</label>
+                        <label for="traceMode" class="text-[10px] font-bold text-slate-500 uppercase">Trails</label>
                     </div>
                 </div>
             </div>
 
-            <div class="stat-card p-5 rounded-2xl bg-blue-600 border-none flex flex-col justify-center">
-                <div class="flex justify-between items-start mb-1">
-                    <span class="text-[10px] font-bold text-blue-200 uppercase">Experiment Time</span>
-                    <span id="maxSpeedDisplay" class="text-[9px] font-bold text-blue-100 bg-blue-500 px-2 py-0.5 rounded italic">Vmax: --</span>
-                </div>
-                <span id="timeDisplay" class="text-4xl font-mono font-bold text-white tracking-tighter">00.00s</span>
+            <div class="stat-card p-5 rounded-2xl bg-blue-600 border-none flex flex-col justify-center text-white">
+                <span class="text-[10px] font-bold text-blue-200 uppercase mb-1 tracking-wider">Telemetry Time</span>
+                <span id="timeDisplay" class="text-4xl font-mono font-bold tracking-tighter">00.00s</span>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div class="lg:col-span-8 stat-card p-2 rounded-2xl relative bg-white overflow-hidden">
-                <canvas id="swarmCanvas" class="w-full h-[650px] bg-slate-50"></canvas>
+            <div class="lg:col-span-8 stat-card p-2 rounded-2xl relative overflow-hidden bg-white">
+                <canvas id="swarmCanvas" class="w-full h-[650px]"></canvas>
             </div>
 
             <div class="lg:col-span-4 flex flex-col gap-6">
                 <div class="stat-card p-5 rounded-2xl">
-                    <h2 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Global Order</h2>
+                    <h2 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest text-center">Nematic Order</h2>
                     <div class="chart-container"><canvas id="nematicChart"></canvas></div>
                 </div>
                 <div class="stat-card p-5 rounded-2xl">
-                    <h2 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest">Phase Variance</h2>
+                    <h2 class="text-[10px] font-bold text-slate-400 uppercase mb-4 tracking-widest text-center">Phase Variance</h2>
                     <div class="chart-container"><canvas id="varianceChart"></canvas></div>
                 </div>
             </div>
@@ -76,16 +81,20 @@
         let robotData = [];
         let times = [];
         let animationFrame;
+        let virtualIndex = 0; 
         let currentIndex = 0;
         let quiverScale = 1.0;
+        let playSpeed = 1.0;
         let colorMap = {};
         let globalViewScale = 1.0;
         let maxSpeedDetected = 1.0;
+        let robotPaths = {};
 
         const canvas = document.getElementById('swarmCanvas');
         const ctx = canvas.getContext('2d');
         const timeDisplay = document.getElementById('timeDisplay');
         const scaleInput = document.getElementById('quiverScale');
+        const speedInput = document.getElementById('playbackSpeed');
         const traceCheck = document.getElementById('traceMode');
 
         scaleInput.oninput = function() {
@@ -93,21 +102,25 @@
             document.getElementById('scaleVal').innerText = quiverScale.toFixed(2) + 'x';
         };
 
+        speedInput.oninput = function() {
+            playSpeed = parseFloat(this.value);
+            document.getElementById('speedVal').innerText = playSpeed.toFixed(1) + 'x';
+        };
+
         function getUniqueColor(id) {
             if (!colorMap[id]) {
                 const hue = (id * 137.5) % 360;
-                colorMap[id] = `hsl(${hue}, 75%, 45%)`;
+                colorMap[id] = `hsl(${hue}, 85%, 45%)`;
             }
             return colorMap[id];
         }
 
-        // --- Chart Configs ---
         const chartOptions = {
             responsive: true, maintainAspectRatio: false, animation: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { type: 'linear', grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 } } },
-                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                x: { type: 'linear', grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } },
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 } } }
             }
         };
 
@@ -122,6 +135,7 @@
                 ctxC.moveTo(x, chart.scales.y.top);
                 ctxC.lineTo(x, chart.scales.y.bottom);
                 ctxC.lineWidth = 2;
+                ctxC.setLineDash([5, 5]);
                 ctxC.strokeStyle = '#2563eb';
                 ctxC.stroke();
                 ctxC.restore();
@@ -157,18 +171,20 @@
             robotData.forEach(d => d.timestamp -= start);
             times = [...new Set(robotData.map(d => d.timestamp))];
             
-            // 1. AUTO-SCALE VIEW
+            robotPaths = {};
+            robotData.forEach(r => {
+                if (!robotPaths[r.tag_id]) robotPaths[r.tag_id] = [];
+                robotPaths[r.tag_id].push({t: r.timestamp, x: r.x, y: r.y});
+            });
+
             const allX = robotData.map(d => d.x - 334);
             const allY = robotData.map(d => d.y - 322);
             const maxX = Math.max(...allX.map(Math.abs));
             const maxY = Math.max(...allY.map(Math.abs));
-            const scaleX = (600 / 2) / (maxX * 1.2); 
-            const scaleY = (600 / 2) / (maxY * 1.2);
-            globalViewScale = Math.min(scaleX, scaleY);
+            const padding = 1.3;
+            globalViewScale = Math.min((600/2)/(maxX*padding), (600/2)/(maxY*padding));
 
-            // 2. SPEED NORMALIZATION (For better Quivers)
-            maxSpeedDetected = Math.max(...robotData.map(d => Math.hypot(d.vx, d.vy)));
-            document.getElementById('maxSpeedDisplay').innerText = `Vmax: ${maxSpeedDetected.toFixed(2)}`;
+            maxSpeedDetected = Math.max(...robotData.map(d => Math.hypot(d.vx, d.vy))) || 1;
             
             let sPoints = [], vPoints = [];
             times.forEach(t => {
@@ -176,7 +192,7 @@
                 const angles = step.map(d => Math.atan2(d.vy, d.vx));
                 let sumC = 0, sumS = 0;
                 angles.forEach(a => { sumC += Math.cos(2*a); sumS += Math.sin(2*a); });
-                const S = Math.sqrt(Math.pow(sumC/angles.length, 2) + Math.pow(sumS/angles.length, 2));
+                const S = Math.sqrt(Math.pow(sumC/angles.length, 2) + Math.pow(sumS/angles.length, 2)) || 0;
                 sPoints.push({x: t, y: S});
                 vPoints.push({x: t, y: 1 - S});
             });
@@ -184,16 +200,23 @@
             nemChart.data.datasets[0].data = sPoints;
             varChart.data.datasets[0].data = vPoints;
             nemChart.update(); varChart.update();
-            currentIndex = 0;
+            virtualIndex = 0;
             animate();
         }
 
         function animate() {
-            if (currentIndex >= times.length) currentIndex = 0;
-            drawSwarm(robotData.filter(d => d.timestamp === times[currentIndex]), times[currentIndex]);
-            timeDisplay.innerText = times[currentIndex].toFixed(2) + 's';
+            if (!times.length) return;
+
+            // Handle variable playback speed
+            virtualIndex += playSpeed;
+            if (virtualIndex >= times.length) virtualIndex = 0;
+            currentIndex = Math.floor(virtualIndex);
+
+            const t = times[currentIndex];
+            drawSwarm(robotData.filter(d => d.timestamp === t), t);
+            
+            timeDisplay.innerText = t.toFixed(2) + 's';
             nemChart.draw(); varChart.draw();
-            currentIndex++;
             animationFrame = requestAnimationFrame(animate);
         }
 
@@ -210,59 +233,51 @@
                 const px = (r.x - 334) * globalViewScale + cx;
                 const py = (r.y - 322) * globalViewScale + cy;
 
-                if (traceCheck.checked) {
-                    const history = robotData.filter(h => h.tag_id === r.tag_id && h.timestamp < t && h.timestamp > t - 0.8);
-                    ctx.beginPath();
-                    history.forEach((hp, i) => {
-                        const hx = (hp.x - 334) * globalViewScale + cx;
-                        const hy = (hp.y - 322) * globalViewScale + cy;
-                        i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
-                    });
-                    ctx.strokeStyle = color;
-                    ctx.globalAlpha = 0.15;
-                    ctx.stroke();
-                    ctx.globalAlpha = 1;
+                // High-Visibility Bold Trails
+                if (traceCheck.checked && robotPaths[r.tag_id]) {
+                    const trailHistory = robotPaths[r.tag_id].filter(h => h.t <= t && h.t > t - 5.0);
+                    if (trailHistory.length > 1) {
+                        ctx.beginPath();
+                        ctx.lineWidth = 2.5;
+                        ctx.globalAlpha = 0.6;
+                        trailHistory.forEach((pos, i) => {
+                            const hx = (pos.x - 334) * globalViewScale + cx;
+                            const hy = (pos.y - 322) * globalViewScale + cy;
+                            i === 0 ? ctx.moveTo(hx, hy) : ctx.lineTo(hx, hy);
+                        });
+                        ctx.strokeStyle = color;
+                        ctx.stroke();
+                        ctx.globalAlpha = 1.0;
+                    }
                 }
 
-                // Precision Quiver Logic
+                // Vector Quiver Logic
                 const speed = Math.hypot(r.vx, r.vy);
-                const baseArrowLength = 35; // Pixels at scale 1.0 for the fastest robot
-                const arrowLen = (speed / maxSpeedDetected) * baseArrowLength * quiverScale;
+                const arrowLen = (speed / maxSpeedDetected) * 45 * quiverScale;
                 
-                if (speed > 0.001) {
+                if (speed > 0.0001) {
                     const angle = Math.atan2(r.vy, r.vx);
-                    const headLen = 6; // pixels
-                    
                     ctx.save();
                     ctx.translate(px, py);
                     ctx.rotate(angle);
-                    
-                    // Draw Shaft
                     ctx.beginPath();
                     ctx.moveTo(0, 0);
                     ctx.lineTo(arrowLen, 0);
-                    ctx.strokeStyle = color;
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                    
-                    // Draw Arrowhead
-                    ctx.beginPath();
+                    ctx.lineTo(arrowLen - 8, -5);
                     ctx.moveTo(arrowLen, 0);
-                    ctx.lineTo(arrowLen - headLen, -headLen/1.5);
-                    ctx.lineTo(arrowLen - headLen, headLen/1.5);
-                    ctx.closePath();
-                    ctx.fillStyle = color;
-                    ctx.fill();
-                    
+                    ctx.lineTo(arrowLen - 8, 5);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
                     ctx.restore();
                 }
 
                 // Robot Marker
                 ctx.beginPath();
-                ctx.arc(px, py, 5, 0, Math.PI * 2);
+                ctx.arc(px, py, 6, 0, Math.PI * 2);
                 ctx.fillStyle = color;
                 ctx.fill();
-                ctx.strokeStyle = '#fff';
+                ctx.strokeStyle = '#000';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
             });
